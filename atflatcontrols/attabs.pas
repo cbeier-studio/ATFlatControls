@@ -2557,9 +2557,9 @@ procedure TATTabs.GetTabXColors(AIndex: integer;
   AMouseOverX: boolean;
   out AColorXBg, AColorXBorder, AColorXMark: TColor);
 begin
-  if GetTabFlatEffective(AIndex) then
-    AColorXBg:= FColorBg
-  else
+  //if GetTabFlatEffective(AIndex) then
+  //  AColorXBg:= FColorBg
+  //else
     AColorXBg:= FColorCloseBg;
 
   AColorXBorder:= AColorXBg;
@@ -4974,9 +4974,9 @@ function TATTabs.GetTabBgColor_Active(AIndex: integer): TColor;
 var
   Data: TATTabData;
 begin
-  if GetTabFlatEffective(AIndex) then
-    Result:= FColorBg
-  else
+  //if GetTabFlatEffective(AIndex) then
+  //  Result:= FColorBg
+  //else
     Result:= FColorTabActive;
 
   if FOptShowEntireColor then
