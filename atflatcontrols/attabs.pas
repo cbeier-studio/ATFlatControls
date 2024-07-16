@@ -378,6 +378,7 @@ const
   _InitOptActiveFontStyleUsed = false;
   _InitOptHotFontStyle = [fsUnderline];
   _InitOptHotFontStyleUsed = false;
+  _InitOptActiveVisibleOnResize = false;
 
   _InitOptShowFlat = false;
   _InitOptShowFlatMouseOver = true;
@@ -888,7 +889,7 @@ type
     property OptScrollMarkSizeY: integer read FOptScrollMarkSizeY write FOptScrollMarkSizeY default _InitOptScrollMarkSizeY;
     property OptScrollPagesizePercents: integer read FOptScrollPagesizePercents write FOptScrollPagesizePercents default _InitOptScrollPagesizePercents;
     property OptDropMarkSize: integer read FOptDropMarkSize write FOptDropMarkSize default _InitOptDropMarkSize;
-    property OptActiveVisibleOnResize: boolean read FOptActiveVisibleOnResize write FOptActiveVisibleOnResize default true;
+    property OptActiveVisibleOnResize: boolean read FOptActiveVisibleOnResize write FOptActiveVisibleOnResize default _InitOptActiveVisibleOnResize;
 
     property OptPosition: TATTabPosition read FOptPosition write FOptPosition default _InitOptPosition;
     property OptIconPosition: TATTabIconPosition read FOptIconPosition write FOptIconPosition default aipIconLefterThanText;
@@ -1403,7 +1404,7 @@ begin
   FOptScrollMarkSizeX:= _InitOptScrollMarkSizeX;
   FOptScrollMarkSizeY:= _InitOptScrollMarkSizeY;
   FOptScrollPagesizePercents:= _InitOptScrollPagesizePercents;
-  FOptActiveVisibleOnResize:= true;
+  FOptActiveVisibleOnResize:= _InitOptActiveVisibleOnResize;
   FOptDropMarkSize:= _InitOptDropMarkSize;
   FOptActiveFontStyle:= _InitOptActiveFontStyle;
   FOptActiveFontStyleUsed:= _InitOptActiveFontStyleUsed;
@@ -3570,9 +3571,7 @@ begin
 
   //auto-scroll tabs to right when width is shrinked
   if FScrollPos>0 then
-    FScrollPos:= Min(FScrollPos, GetMaxScrollPos);
-
-  Invalidate;
+    SetScrollPos(Min(FScrollPos, GetMaxScrollPos));
 end;
 
 
@@ -3681,6 +3680,7 @@ function TATTabs.DeleteTab(AIndex: integer;
   //
 var
   CanClose, CanContinue: boolean;
+  NTabIndexBefore: integer;
   NMax: integer;
 begin
   FTabsChanged:= true;
@@ -3702,24 +3702,30 @@ begin
 
   if IsIndexOk(AIndex) then
   begin
+    NTabIndexBefore:= FTabIndex;
     FTabIndexHinted:= cTabIndexNone;
     FTabIndexHintedPrev:= cTabIndexNone;
 
     FTabList.Delete(AIndex);
 
-    if AAction=aocDefault then
-      AAction:= FOptWhichActivateOnClose;
-
-    case AAction of
-      aocNone:
-        begin end;
-      aocRight:
-        _ActivateRightTab;
-      aocRecent:
-        _ActivateRecentTab;
-      else
-        _ActivateRightTab;
-    end;
+    if NTabIndexBefore=AIndex then
+    begin
+      if AAction=aocDefault then
+        AAction:= FOptWhichActivateOnClose;
+      case AAction of
+        aocNone:
+          begin end;
+        aocRight:
+          _ActivateRightTab;
+        aocRecent:
+          _ActivateRecentTab;
+        else
+          _ActivateRightTab;
+      end;
+    end
+    else
+    if NTabIndexBefore>AIndex then
+      Dec(FTabIndex);
 
     //if lot of tabs were opened, and closed last tab, need to scroll all tabs righter
     NMax:= GetMaxScrollPos;
@@ -4382,11 +4388,7 @@ var
   NPos: integer;
 begin
   NPos:= Max(0, FScrollPos-GetScrollPageSize);
-  if NPos<>FScrollPos then
-  begin
-    FScrollPos:= NPos;
-    Invalidate;
-  end;
+  SetScrollPos(NPos);
 end;
 
 procedure TATTabs.DoScrollRight;
@@ -4394,11 +4396,7 @@ var
   NPos: integer;
 begin
   NPos:= Min(GetMaxScrollPos, FScrollPos+GetScrollPageSize);
-  if NPos<>FScrollPos then
-  begin
-    FScrollPos:= NPos;
-    Invalidate;
-  end;
+  SetScrollPos(NPos);
 end;
 
 procedure TATTabs.DoPaintButtonPlus(C: TCanvas);
@@ -4908,6 +4906,7 @@ procedure TATTabs.MakeVisible(AIndex: integer);
 var
   D: TATTabData;
   R: TRect;
+  NPos: integer;
 begin
   //sometimes new tab has not updated Data.TabRect
   if FTabsChanged or FTabsResized then
@@ -4931,11 +4930,11 @@ begin
   R:= D.TabRect;
 
   if not FActualMultiline then
-    FScrollPos:= Min(GetMaxScrollPos, Max(0, R.Left - Width div 2))
+    NPos:= R.Left - Width div 2
   else
-    FScrollPos:= Min(GetMaxScrollPos, Max(0, R.Top - Height div 2));
+    NPos:= R.Top - Height div 2;
 
-  Invalidate;
+  SetScrollPos(Min(GetMaxScrollPos, Max(0, NPos)));
 end;
 
 procedure TATTabs.SetScrollPos(AValue: integer);
