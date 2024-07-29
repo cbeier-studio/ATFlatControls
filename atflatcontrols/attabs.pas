@@ -1930,7 +1930,7 @@ procedure TATTabs.DoPaintTabShape_C(C: TCanvas;
 var
   ColorPos: TATTabPosition;
   Pic: TATTabsPicture;
-  AColorBg, AColorBorder, AColorBorderLow: TColor;
+  NColorBg, NColorBorder, NColorBorderLow: TColor;
 begin
   if FThemed then
   begin
@@ -1944,15 +1944,15 @@ begin
 
   if ATabActive then
   begin
-    AColorBg:= GetTabBgColor_Active(ATabIndex);
-    AColorBorder:= FColorBorderActive;
-    AColorBorderLow:= clNone;
+    NColorBg:= GetTabBgColor_Active(ATabIndex);
+    NColorBorder:= FColorBorderActive;
+    NColorBorderLow:= clNone;
   end
   else
   begin
-    AColorBg:= GetTabBgColor_Passive(ATabIndex);
-    AColorBorder:= FColorBorderPassive;
-    AColorBorderLow:= FColorBorderActive;
+    NColorBg:= GetTabBgColor_Passive(ATabIndex);
+    NColorBorder:= FColorBorderPassive;
+    NColorBorderLow:= FColorBorderActive;
   end;
 
   if FOptShowFlat then
@@ -1970,38 +1970,38 @@ begin
     atpTop:
       begin
         if FLastSpaceSide=0 then
-          DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y+1, AColorBorder);
+          DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y+1, NColorBorder);
         if FLastSpaceSide=0 then
-          DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y+1, AColorBorder);
-        DrawLine(C, PL1.X, PL1.Y, PR1.X, PL1.Y, AColorBorder);
-        if AColorBorderLow<>clNone then
+          DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y+1, NColorBorder);
+        DrawLine(C, PL1.X, PL1.Y, PR1.X, PL1.Y, NColorBorder);
+        if NColorBorderLow<>clNone then
           DrawLine(C, PL2.X-DoScale(FLastSpaceSide), ARect.Bottom,
-                      PR2.X+DoScale(FLastSpaceSide), ARect.Bottom, AColorBorderLow)
+                      PR2.X+DoScale(FLastSpaceSide), ARect.Bottom, NColorBorderLow)
         else
-          DrawLine(C, PL2.X+1, ARect.Bottom, PR2.X-1, ARect.Bottom, AColorBg);
+          DrawLine(C, PL2.X+1, ARect.Bottom, PR2.X-1, ARect.Bottom, NColorBg);
       end;
     atpBottom:
       begin
-        DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y+1, AColorBorder);
-        DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y+1, AColorBorder);
-        DrawLine(C, PL2.X, PL2.Y+1, PR2.X, PL2.Y+1, AColorBorder);
-        if AColorBorderLow<>clNone then
+        DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y+1, NColorBorder);
+        DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y+1, NColorBorder);
+        DrawLine(C, PL2.X, PL2.Y+1, PR2.X, PL2.Y+1, NColorBorder);
+        if NColorBorderLow<>clNone then
           DrawLine(C, PL1.X-DoScale(FLastSpaceSide), ARect.Top,
-                      PR1.X+DoScale(FLastSpaceSide), ARect.Top, AColorBorderLow)
+                      PR1.X+DoScale(FLastSpaceSide), ARect.Top, NColorBorderLow)
       end;
     atpLeft:
       begin
-        DrawLine(C, PL1.X, PL1.Y, PR1.X, PR1.Y, AColorBorder);
-        DrawLine(C, PL2.X, PL2.Y, PR2.X, PR2.Y, AColorBorder);
-        DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y, AColorBorder);
-        DrawLine(C, PR1.X+1, PR1.Y+1, PR1.X+1, PR2.Y-1, IfThen(AColorBorderLow<>clNone, AColorBorderLow, AColorBg));
+        DrawLine(C, PL1.X, PL1.Y, PR1.X, PR1.Y, NColorBorder);
+        DrawLine(C, PL2.X, PL2.Y, PR2.X, PR2.Y, NColorBorder);
+        DrawLine(C, PL1.X, PL1.Y, PL2.X, PL2.Y, NColorBorder);
+        DrawLine(C, PR1.X+1, PR1.Y+1, PR1.X+1, PR2.Y-1, IfThen(NColorBorderLow<>clNone, NColorBorderLow, NColorBg));
       end;
     atpRight:
       begin
-        DrawLine(C, PL1.X, PL1.Y, PR1.X, PR1.Y, AColorBorder);
-        DrawLine(C, PL2.X, PL2.Y, PR2.X, PR2.Y, AColorBorder);
-        DrawLine(C, PL1.X-1, PL1.Y+1, PL1.X-1, PL2.Y-1, IfThen(AColorBorderLow<>clNone, AColorBorderLow, AColorBg));
-        DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y, AColorBorder);
+        DrawLine(C, PL1.X, PL1.Y, PR1.X, PR1.Y, NColorBorder);
+        DrawLine(C, PL2.X, PL2.Y, PR2.X, PR2.Y, NColorBorder);
+        DrawLine(C, PL1.X-1, PL1.Y+1, PL1.X-1, PL2.Y-1, IfThen(NColorBorderLow<>clNone, NColorBorderLow, NColorBg));
+        DrawLine(C, PR1.X, PR1.Y, PR2.X, PR2.Y, NColorBorder);
       end;
   end;
 end;
@@ -2010,7 +2010,7 @@ procedure TATTabs.DoPaintTabShape_L(C: TCanvas; const ARect: TRect;
   ATabActive: boolean; ATabIndex: integer);
 var
   Pic: TATTabsPicture;
-  AColorBg, AColorBorder: TColor;
+  NColorBg, NColorBorder: TColor;
 begin
   if FThemed then
   begin
@@ -2024,13 +2024,13 @@ begin
 
   if ATabActive then
   begin
-    AColorBg:= GetTabBgColor_Active(ATabIndex);
-    AColorBorder:= FColorBorderActive
+    NColorBg:= GetTabBgColor_Active(ATabIndex);
+    NColorBorder:= FColorBorderActive
   end
   else
   begin
-    AColorBg:= GetTabBgColor_Passive(ATabIndex);
-    AColorBorder:= FColorBorderPassive;
+    NColorBg:= GetTabBgColor_Passive(ATabIndex);
+    NColorBorder:= FColorBorderPassive;
   end;
 
   if not FOptShowFlat then
@@ -2044,8 +2044,8 @@ begin
             DoScale(FOptTabHeight)+IfThen(ATabActive, 1),
             cSmoothScale,
             ampnTopLeft,
-            AColorBg,
-            AColorBorder,
+            NColorBg,
+            NColorBorder,
             FBitmapAngleL);
         end;
       atpBottom:
@@ -2057,8 +2057,8 @@ begin
             DoScale(FOptTabHeight),
             cSmoothScale,
             ampnBottomLeft,
-            AColorBg,
-            AColorBorder,
+            NColorBg,
+            NColorBorder,
             FBitmapAngleL);
         end;
     end;
@@ -2068,7 +2068,7 @@ procedure TATTabs.DoPaintTabShape_R(C: TCanvas; const ARect: TRect;
   ATabActive: boolean; ATabIndex: integer);
 var
   Pic: TATTabsPicture;
-  AColorBg, AColorBorder: TColor;
+  NColorBg, NColorBorder: TColor;
 begin
   if FThemed then
   begin
@@ -2082,13 +2082,13 @@ begin
 
   if ATabActive then
   begin
-    AColorBg:= GetTabBgColor_Active(ATabIndex);
-    AColorBorder:= FColorBorderActive
+    NColorBg:= GetTabBgColor_Active(ATabIndex);
+    NColorBorder:= FColorBorderActive
   end
   else
   begin
-    AColorBg:= GetTabBgColor_Passive(ATabIndex);
-    AColorBorder:= FColorBorderPassive;
+    NColorBg:= GetTabBgColor_Passive(ATabIndex);
+    NColorBorder:= FColorBorderPassive;
   end;
 
   if not FOptShowFlat then
@@ -2102,8 +2102,8 @@ begin
             DoScale(FOptTabHeight)+IfThen(ATabActive, 1),
             cSmoothScale,
             ampnTopRight,
-            AColorBg,
-            AColorBorder,
+            NColorBg,
+            NColorBorder,
             FBitmapAngleR);
         end;
       atpBottom:
@@ -2115,8 +2115,8 @@ begin
             DoScale(FOptTabHeight),
             cSmoothScale,
             ampnBottomRight,
-            AColorBg,
-            AColorBorder,
+            NColorBg,
+            NColorBorder,
             FBitmapAngleR);
         end;
     end;
@@ -3432,6 +3432,8 @@ begin
 
   FTabIndexOver:= GetTabAt(X, Y, bOverX);
   FTabIndexDrop:= FTabIndexOver;
+  //Application.MainForm.Caption:= 'TabIndexDrop (MouseMove): '+IntToStr(FTabIndexDrop);
+
   if FTabIndexOver=cTabIndexNone then exit;
   Data:= nil;
 
@@ -3511,8 +3513,7 @@ end;
 
 function TATTabs.DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean;
 var
-  bToRight: boolean;
-  bSwitchTab: boolean;
+  bToRight, bSwitchTab, bOverX: boolean;
 begin
   Result:= false;
   bSwitchTab:= false;
@@ -3553,6 +3554,10 @@ begin
     else
       DoScrollLeft;
   end;
+
+  FTabIndexOver:= GetTabAt(MousePos.X, MousePos.Y, bOverX);
+  FTabIndexDrop:= FTabIndexOver;
+  //Application.MainForm.Caption:= 'TabIndexDrop (MouseWheel): '+IntToStr(FTabIndexDrop);
 
   Result:= true;
 end;
@@ -3679,7 +3684,7 @@ function TATTabs.DeleteTab(AIndex: integer;
   end;
   //
 var
-  CanClose, CanContinue: boolean;
+  bCanClose, bCanContinue: boolean;
   NTabIndexBefore: integer;
   NMax: integer;
 begin
@@ -3688,15 +3693,15 @@ begin
 
   if AAllowEvent then
   begin
-    CanClose:= true;
-    CanContinue:= AWithCancelBtn;
+    bCanClose:= true;
+    bCanContinue:= AWithCancelBtn;
 
     if Assigned(FOnTabClose) then
-      FOnTabClose(Self, AIndex, CanClose, CanContinue);
+      FOnTabClose(Self, AIndex, bCanClose, bCanContinue);
 
-    if AWithCancelBtn and not CanContinue then
+    if AWithCancelBtn and not bCanContinue then
       begin Result:= false; Exit end;
-    if not CanClose then
+    if not bCanClose then
       begin Result:= true; Exit end;
   end;
 
@@ -4114,7 +4119,7 @@ end;
 procedure TATTabs.DoTabDrop;
 var
   NFrom, NTo: integer;
-  ACanDrop: boolean;
+  bCanDrop: boolean;
 begin
   NFrom:= FTabIndex;
   if not IsIndexOk(NFrom) then Exit;
@@ -4123,12 +4128,14 @@ begin
     NTo:= TabCount-1;
   if NFrom=NTo then Exit;
 
-  ACanDrop:= true;
+  bCanDrop:= true;
   if Assigned(FOnTabDropQuery) then
-    FOnTabDropQuery(Self, NFrom, NTo, ACanDrop);
-  if not ACanDrop then Exit;
+    FOnTabDropQuery(Self, NFrom, NTo, bCanDrop);
+  if not bCanDrop then Exit;
 
   FTabList.Items[NFrom].Index:= NTo;
+  if Assigned(FBitmap) then
+    UpdateTabRects(FBitmap.Canvas); //fixing wrong scroll pos after drop after MouseWheel
   SetTabIndex(NTo);
 
   if Assigned(FOnTabMove) then
@@ -4166,7 +4173,7 @@ end;
 
 procedure TATTabs.DoTabDropToOtherControl(ATarget: TControl; const APnt: TPoint);
 var
-  ATabs: TATTabs;
+  TargetTabs: TATTabs;
   NTab, NTabTo: integer;
   Data: TATTabData;
   P: TPoint;
@@ -4184,30 +4191,30 @@ begin
     Exit;
   end;  
 
-  ATabs:= ATarget as TATTabs;
-  if not ATabs.OptMouseDragEnabled then Exit;
+  TargetTabs:= ATarget as TATTabs;
+  if not TargetTabs.OptMouseDragEnabled then Exit;
 
   NTab:= FTabIndex;
-  NTabTo:= ATabs.GetTabAt(APnt.X, APnt.Y, bOverX); //-1 is allowed
+  NTabTo:= TargetTabs.GetTabAt(APnt.X, APnt.Y, bOverX); //-1 is allowed
 
   Data:= GetTabData(NTab);
   if Data=nil then Exit;
 
-  ATabs.AddTab(NTabTo, Data);
+  TargetTabs.AddTab(NTabTo, Data);
 
   //correct TabObject parent
   if Data.TabObject is TWinControl then
     if (Data.TabObject as TWinControl).Parent = Self.Parent then
-      (Data.TabObject as TWinControl).Parent:= ATabs.Parent;
+      (Data.TabObject as TWinControl).Parent:= TargetTabs.Parent;
 
   //delete old tab (don't call OnTabClose)
   DeleteTab(NTab, false{AllowEvent}, false);
 
   //activate dropped tab
   if NTabTo<0 then
-    ATabs.TabIndex:= ATabs.TabCount-1
+    TargetTabs.TabIndex:= TargetTabs.TabCount-1
   else
-    ATabs.TabIndex:= NTabTo;
+    TargetTabs.TabIndex:= NTabTo;
 end;
 
 function TATTabs.GetTabTick(AIndex: integer): Int64;
