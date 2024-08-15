@@ -214,6 +214,17 @@ type
     aocRecent
     );
 
+  TATTabDeletionReason = (
+    adrNone,
+    adrClickOnXIcon,
+    adrClickOnXButton,
+    adrDoubleClick,
+    adrMiddleClick,
+    adrDragDrop,
+    adrCloseManyTabs,
+    adrMoveBetweenGroups
+    );
+
   { TATTabPaintInfo }
 
   TATTabPaintInfo = record
@@ -414,7 +425,6 @@ type
 
   TATTabs = class(TCustomControl)
   private
-    //drag-drop
     FMouseDown: boolean;
     FMouseDownPnt: TPoint;
     FMouseDownDbl: boolean;
@@ -422,8 +432,8 @@ type
     FMouseDownShift: TShiftState;
     FMouseDownRightBtn: boolean;
     FMouseDragBegins: boolean;
+    FMouseDownThenTabsScrolled: boolean;
 
-    //colors
     FColorBg: TColor; //color of background (visible at top and between tabs)
     FColorBorderActive: TColor; //color of 1px border of active tab
     FColorBorderPassive: TColor; //color of 1px border of inactive tabs
@@ -446,7 +456,6 @@ type
     FColorDropMark: TColor;
     FColorScrollMark: TColor;
 
-    //opts
     FButtonsLeft: TATTabButtons;
     FButtonsRight: TATTabButtons;
     FOptButtonSize: integer;
@@ -466,6 +475,7 @@ type
     FOptTabWidthNormal: integer; //tab maximal width (used when only few tabs)
     FOptTabWidthMinimalHidesX: integer; //tab minimal width, after which "x" mark hides for inactive tabs
     FOptTabRounded: boolean;
+    FOptSpaceSide: integer;
     FOptSpaceBetweenTabs: integer; //space between nearest tabs
     FOptSpaceBetweenLines: integer;
     FOptSpaceBetweenIconCaption: integer;
@@ -517,6 +527,8 @@ type
     FOptActiveFontStyleUsed: boolean;
     FOptHotFontStyle: TFontStyles;
     FOptHotFontStyleUsed: boolean;
+    FOptFontScale: integer;
+    FOptMinimalWidthForSides: integer;
 
     FOptMouseWheelMode: TATTabMouseWheelMode;
     FOptMouseMiddleClickClose: boolean; //enable close tab by middle-click
@@ -527,7 +539,6 @@ type
     FOptMouseDragFromNotATTabs: boolean;
     FOptMouseRightClickActivatesTab: boolean;
 
-    //others
     FTabWidth: integer;
     FTabIndex: integer;
     FTabIndexLoaded: integer;
@@ -542,9 +553,10 @@ type
 
     FRealIndentLeft: integer;
     FRealIndentRight: integer;
-    FOptFontScale: integer;
-    FOptMinimalWidthForSides: integer;
-    FOptSpaceSide: integer;
+    FRealIndentTop: integer;
+    FRealIndentBottom: integer;
+    FRealMaxVisibleX: integer;
+    FRealMaxVisibleY: integer;
     FPaintCount: integer;
     FLastOverIndex: integer;
     FLastOverX: boolean;
@@ -552,6 +564,7 @@ type
     FActualMultiline: boolean;
     FTabsChanged: boolean;
     FTabsResized: boolean;
+    FTabDeletionReason: TATTabDeletionReason;
     FScrollingNeeded: boolean;
 
     FScrollPos: integer;
@@ -605,9 +618,8 @@ type
     FPic_Arrow_D: TATTabsPicture;
     FPic_Arrow_D_a: TATTabsPicture;
 
-    //events    
     FOnTabClick: TNotifyEvent;
-    FOnTabChanged: TNotifyEvent;                   // aducom
+    FOnTabChanged: TNotifyEvent;
     FOnTabPlusClick: TNotifyEvent;
     FOnTabClickUserButton: TATTabClickUserButton;
     FOnTabClose: TATTabCloseEvent;
@@ -624,7 +636,7 @@ type
     FOnTabDropQuery: TATTabDropQueryEvent;
     FOnTabDragging: TATTabDropQueryEvent;
 
-    function ConvertButtonIdToTabIndex(Id: TATTabButton): integer; inline;
+    function ConvertButtonIdToTabIndex(Id: TATTabButton): integer;
     procedure DoClickUser(AIndex: integer);
     procedure DoHandleClick;
     procedure DoHandleRightClick;
@@ -638,7 +650,7 @@ type
       APos: TATTabPosition);
     procedure DoPaintPlus(C: TCanvas; const ARect: TRect);
     procedure DoPaintSeparator(C: TCanvas; const R: TRect);
-    procedure DoPaintSpaceInital(C: TCanvas); inline;
+    procedure DoPaintSpaceInital(C: TCanvas);
     procedure DoPaintSpacerRect(C: TCanvas);
     procedure DoPaintTabShape(C: TCanvas; const ATabRect: TRect;
       ATabActive: boolean; ATabIndex: integer);
@@ -662,13 +674,13 @@ type
     function GetTabCaptionFinal(AData: TATTabData; ATabIndex: integer): TATTabString;
     function GetButtonsEdgeCoord(AtLeft: boolean): integer;
     function GetButtonsWidth(const B: TATTabButtons): integer;
-    function GetPositionInverted(APos: TATTabPosition): TATTabPosition; inline;
+    function GetPositionInverted(APos: TATTabPosition): TATTabPosition;
     function GetIndexOfButton(const AButtons: TATTabButtons; ABtn: TATTabButton): integer;
-    function GetInitialVerticalIndent: integer; inline;
-    function GetButtonsEmpty: boolean; inline;
+    function GetInitialVerticalIndent: integer;
+    function GetButtonsEmpty: boolean;
     function GetTabBgColor_Passive(AIndex: integer): TColor;
     function GetTabBgColor_Active(AIndex: integer): TColor;
-    function GetTabFlatEffective(AIndex: integer): boolean; inline;
+    function GetTabFlatEffective(AIndex: integer): boolean;
     procedure GetTabXColors(AIndex: integer; AMouseOverX: boolean; out AColorXBg,
       AColorXBorder, AColorXMark: TColor);
     function GetScrollMarkNeeded: boolean;
@@ -699,12 +711,12 @@ type
     procedure UpdateTabRectsSpecial;
     procedure UpdateTabPropsX;
     procedure UpdateTabRectsToFillLine(AIndexFrom, AIndexTo: integer; ALastLine: boolean);
-    procedure UpdateCanvasAntialiasMode(C: TCanvas); inline;
+    procedure UpdateCanvasAntialiasMode(C: TCanvas);
     procedure UpdateCaptionProps(C: TCanvas; const ACaption: TATTabString;
       out ALineHeight: integer; out ATextSize: TSize);
     procedure DoTabDrop;
     function GetTabTick(AIndex: integer): Int64;
-    function _IsDrag: boolean; inline;
+    function _IsDrag: boolean;
     procedure SetOptShowPlusTab(const Value: boolean);
 
   public
@@ -723,10 +735,11 @@ type
     procedure UpdateTabTooltip;
     function GetTabRect_X(const ARect: TRect): TRect;
     function GetRectScrolled(const R: TRect): TRect;
-    function GetTabAt(AX, AY: integer; out APressedX: boolean): integer;
+    function GetTabAt(AX, AY: integer; out APressedX: boolean; AForDragDrop: boolean=false): integer;
     function GetTabData(AIndex: integer): TATTabData;
     function GetTabLastVisibleIndex: integer;
     function TabCount: integer;
+    property TabDeletionReason: TATTabDeletionReason read FTabDeletionReason;
     function AddTab(
       AIndex: integer;
       const ACaption: TATTabString;
@@ -737,7 +750,8 @@ type
     procedure AddTab(AIndex: integer; AData: TATTabData); overload;
     procedure Clear;
     function DeleteTab(AIndex: integer; AAllowEvent, AWithCancelBtn: boolean;
-      AAction: TATTabActionOnClose=aocDefault): boolean;
+      AAction: TATTabActionOnClose=aocDefault;
+      AReason: TATTabDeletionReason=adrNone): boolean;
     function HideTab(AIndex: integer): boolean;
     function ShowTab(AIndex: integer): boolean;
     procedure MakeVisible(AIndex: integer);
@@ -2685,7 +2699,7 @@ end;
 
 procedure TATTabs.DoPaintTo(C: TCanvas);
 var
-  RRect, RRectXMark: TRect;
+  RRect, RRectXMark, RRectBtn: TRect;
   NColorFont: TColor;
   ElemType: TATTabElemType;
   Data: TATTabData;
@@ -2720,8 +2734,24 @@ begin
   FLastOverIndex:= FTabIndexOver;
   FLastOverX:= bMouseOverX;
 
-  FRealIndentLeft:= DoScale(FOptSpaceInitial) + GetButtonsWidth(FButtonsLeft);
-  FRealIndentRight:= DoScale(FOptSpaceInitial) + GetButtonsWidth(FButtonsRight);
+  if FActualMultiline then
+  begin
+    FRealIndentLeft:= 0;
+    FRealIndentRight:= 0;
+    RRectBtn:= GetRectOfButtonIndex(0, true);
+    FRealIndentTop:= RRectBtn.Bottom;
+    FRealIndentBottom:= 0;
+  end
+  else
+  begin
+    FRealIndentLeft:= DoScale(FOptSpaceInitial) + GetButtonsWidth(FButtonsLeft);
+    FRealIndentRight:= DoScale(FOptSpaceInitial) + GetButtonsWidth(FButtonsRight);
+    FRealIndentTop:= 0;
+    FRealIndentBottom:= 0;
+  end;
+
+  FRealMaxVisibleX:= Width - FRealIndentRight + FOptSpaceInitial - FOptSpaceSide;
+  FRealMaxVisibleY:= Height - FRealIndentBottom;
 
   FRectArrowLeft:= GetRectOfButton(atbScrollLeft);
   FRectArrowRight:= GetRectOfButton(atbScrollRight);
@@ -2933,24 +2963,20 @@ var
   D: TATTabData;
   R: TRect;
   N: integer;
-  Pnt: TPoint;
-  bOverX, bRightSide: boolean;
+  bRightSide: boolean;
 begin
   if not _IsDrag then Exit;
 
-  Pnt:= ScreenToClient(Mouse.CursorPos);
-  N:= GetTabAt(Pnt.X, Pnt.Y, bOverX);
+  N:= FTabIndexDrop;
 
-  if (N=cTabIndexPlus) or (N=cTabIndexEmptyArea) then
+  if N<0 then //includes all user-buttons, plus-button, close-button, empty area
   begin
     N:= TabCount-1;
     bRightSide:= true;
   end
   else
   begin
-    if N<0 then
-      N:= TabCount-1;
-    bRightSide:= false; //N>FTabIndex;
+    bRightSide:= false;
   end;
 
   D:= GetTabData(N);
@@ -3090,17 +3116,19 @@ begin
 end;
 
 
-function TATTabs.GetTabAt(AX, AY: integer; out APressedX: boolean): integer;
+function TATTabs.GetTabAt(AX, AY: integer; out APressedX: boolean;
+  AForDragDrop: boolean=false): integer;
 var
   Pnt: TPoint;
-  RectTab: TRect;
-  D: TATTabData;
+  RectTab, RectNext: TRect;
+  Data, DataNext: TATTabData;
   ok: boolean;
-  i: integer;
+  NCount, L, R, M: integer;
 begin
   Result:= cTabIndexNone;
   APressedX:= false;
   Pnt:= Point(AX, AY);
+  NCount:= TabCount;
 
   if PtInRect(FRectArrowLeft, Pnt) then
   begin
@@ -3162,41 +3190,7 @@ begin
     Exit
   end;
 
-  //normal tab?
-  for i:= 0 to TabCount-1 do
-  begin
-    D:= GetTabData(i);
-    if D=nil then Continue;
-    if not D.TabVisible then Continue;
-
-    RectTab:= GetRectScrolled(D.TabRect);
-    if RectTab=cRect0 then Continue;
-
-    //support drag-drop into area between tabs
-    //we need to increase RectTab, because it doesn't contain inter-tab area
-    if FOptPosition in [atpTop, atpBottom] then
-      Dec(RectTab.Left, DoScale(FOptSpaceBetweenTabs))
-    else
-      Dec(RectTab.Top, DoScale(FOptSpaceBetweenTabs));
-
-    if FActualMultiline then
-    begin
-      if RectTab.Top>Pnt.Y then Break;
-    end
-    else
-    begin
-      if RectTab.Left>Pnt.X then Break;
-    end;
-
-    if PtInRect(RectTab, Pnt) then
-    begin
-      Result:= i;
-      APressedX:= D.TabVisibleX and PtInRect(GetRectScrolled(D.TabRectX), Pnt);
-      Exit;
-    end;
-  end;
-
-  //plus tab?
+  //plus pseudo-tab?
   if FOptShowPlusTab then
     if PtInRect(FRectTabPlus_Scrolled, Pnt) then
     begin
@@ -3217,6 +3211,71 @@ begin
       Result:= cTabIndexEmptyArea;
       Exit;
     end;
+  end;
+
+  //normal tab?
+  L:= 0;
+  R:= NCount-1;
+  while (L<=R) do
+  begin
+    M:= (L+R+1) div 2;
+    Data:= GetTabData(M);
+    if Data=nil then Break;
+
+    RectTab:= GetRectScrolled(Data.TabRect);
+    if RectTab=cRect0 then Break;
+
+    //support drag-drop into area between tabs
+    //we need to increase RectTab, because it doesn't contain inter-tab area
+    if FOptPosition in [atpTop, atpBottom] then
+      Dec(RectTab.Left, DoScale(FOptSpaceBetweenTabs))
+    else
+      Dec(RectTab.Top, DoScale(FOptSpaceBetweenTabs));
+
+    if PtInRect(RectTab, Pnt) then
+    begin
+      if Data.TabVisible then
+      begin
+        Result:= M;
+        APressedX:= Data.TabVisibleX and PtInRect(GetRectScrolled(Data.TabRectX), Pnt);
+        if AForDragDrop then
+          //position is over right-half of tab?
+          if PtInRect(Rect((RectTab.Left+RectTab.Right) div 2, RectTab.Top, RectTab.Right, RectTab.Bottom), Pnt) then
+          begin
+            if (M+1=NCount) then
+            begin
+              Result:= cTabIndexPlus;
+              APressedX:= false;
+            end
+            else
+            if (M+1<NCount) then
+            begin
+              DataNext:= GetTabData(M+1);
+              if Assigned(DataNext) and DataNext.TabVisible then
+              begin
+                RectNext:= GetRectScrolled(DataNext.TabRect);
+                if (RectNext.Top=RectTab.Top) and (RectNext.Left>=RectTab.Right) then
+                begin
+                  Result:= M+1;
+                  APressedX:= false;
+                end;
+              end;
+            end;
+          end;
+      end;
+      Exit;
+    end;
+
+    if (AY>=RectTab.Bottom) then
+      L:= M+1
+    else
+    if (AY<RectTab.Top) then
+      R:= M-1
+    else
+    if (AX>=RectTab.Right) then
+      L:= M+1
+    else
+      R:= M-1;
   end;
 end;
 
@@ -3247,18 +3306,21 @@ begin
     if Assigned(FOnTabDblClick) and (FTabIndexOver>=0) then
       FOnTabDblClick(Self, FTabIndexOver);
 
-    if FOptMouseDoubleClickClose and (FTabIndexOver>=0) then
-      DeleteTab(FTabIndexOver, true, true)
+    if FOptMouseDoubleClickClose and (FTabIndexOver>=0) and (not FMouseDownThenTabsScrolled) then
+      DeleteTab(FTabIndexOver, true, true, aocDefault, adrDoubleClick)
     else
     if FOptMouseDoubleClickPlus and (FTabIndexOver=cTabIndexEmptyArea) then
       if Assigned(FOnTabPlusClick) then
         FOnTabPlusClick(Self);
+
+    FMouseDownThenTabsScrolled:= false;
     Exit
   end;
 
   if bClick then
   begin
     DoHandleClick;
+    FMouseDownThenTabsScrolled:= false;
     Invalidate;
     Exit
   end;
@@ -3298,7 +3360,7 @@ begin
   begin
     if FOptMouseMiddleClickClose then
       if FTabIndexOver>=0 then
-        DeleteTab(FTabIndexOver, true, true);
+        DeleteTab(FTabIndexOver, true, true, aocDefault, adrMiddleClick);
     Exit;
   end;
 
@@ -3344,7 +3406,7 @@ begin
           Action:= aocDefault;
           if Assigned(FOnTabGetCloseAction) then
             FOnTabGetCloseAction(Self, Action);
-          DeleteTab(FTabIndex, true, true, Action);
+          DeleteTab(FTabIndex, true, true, Action, adrClickOnXButton);
         end
 
       else
@@ -3353,10 +3415,10 @@ begin
           if Assigned(D) and D.TabVisibleX then
           begin
             R:= GetRectScrolled(D.TabRectX);
-            if PtInRect(R, FMouseDownPnt) then
+            if PtInRect(R, FMouseDownPnt) and (not FMouseDownThenTabsScrolled) then
             begin
               EndDrag(false);
-              DeleteTab(FTabIndexOver, true, true);
+              DeleteTab(FTabIndexOver, true, true, aocDefault, adrClickOnXIcon);
               exit
             end;
           end;
@@ -3431,7 +3493,7 @@ begin
   end;
 
   FTabIndexOver:= GetTabAt(X, Y, bOverX);
-  FTabIndexDrop:= FTabIndexOver;
+  FTabIndexDrop:= GetTabAt(X, Y, bOverX, true);
   //Application.MainForm.Caption:= 'TabIndexDrop (MouseMove): '+IntToStr(FTabIndexDrop);
 
   if FTabIndexOver=cTabIndexNone then exit;
@@ -3556,7 +3618,7 @@ begin
   end;
 
   FTabIndexOver:= GetTabAt(MousePos.X, MousePos.Y, bOverX);
-  FTabIndexDrop:= FTabIndexOver;
+  FTabIndexDrop:= GetTabAt(MousePos.X, MousePos.Y, bOverX, true);
   //Application.MainForm.Caption:= 'TabIndexDrop (MouseWheel): '+IntToStr(FTabIndexDrop);
 
   Result:= true;
@@ -3647,7 +3709,8 @@ end;
 
 function TATTabs.DeleteTab(AIndex: integer;
   AAllowEvent, AWithCancelBtn: boolean;
-  AAction: TATTabActionOnClose=aocDefault): boolean;
+  AAction: TATTabActionOnClose=aocDefault;
+  AReason: TATTabDeletionReason=adrNone): boolean;
   //
   procedure _ActivateRightTab;
   begin
@@ -3688,7 +3751,7 @@ var
   NTabIndexBefore: integer;
   NMax: integer;
 begin
-  FTabsChanged:= true;
+  FTabDeletionReason:= AReason;
   FMouseDown:= false;
 
   if AAllowEvent then
@@ -3707,6 +3770,7 @@ begin
 
   if IsIndexOk(AIndex) then
   begin
+    FTabsChanged:= true;
     NTabIndexBefore:= FTabIndex;
     FTabIndexHinted:= cTabIndexNone;
     FTabIndexHintedPrev:= cTabIndexNone;
@@ -4125,7 +4189,11 @@ begin
   if not IsIndexOk(NFrom) then Exit;
   NTo:= FTabIndexDrop;
   if not IsIndexOk(NTo) then
-    NTo:= TabCount-1;
+    NTo:= TabCount-1
+  else
+  if NTo>NFrom then
+    Dec(NTo); //fix index if drop after current
+
   if NFrom=NTo then Exit;
 
   bCanDrop:= true;
@@ -4208,7 +4276,7 @@ begin
       (Data.TabObject as TWinControl).Parent:= TargetTabs.Parent;
 
   //delete old tab (don't call OnTabClose)
-  DeleteTab(NTab, false{AllowEvent}, false);
+  DeleteTab(NTab, false{AllowEvent}, false, aocDefault, adrDragDrop);
 
   //activate dropped tab
   if NTabTo<0 then
@@ -4877,6 +4945,7 @@ function TATTabs.IsTabVisible(AIndex: integer): boolean;
 var
   D: TATTabData;
   R: TRect;
+  W, H: integer;
 begin
   D:= GetTabData(AIndex);
   if D=nil then
@@ -4898,22 +4967,25 @@ begin
     exit
   end;
 
+  W:= Width;
+  H:= Height;
   R:= GetRectScrolled(R);
+
   if not FActualMultiline then
     Result:=
       (R.Left >= FRealIndentLeft) and
-      (R.Right < Width-FRealIndentRight)
+      (R.Right <= FRealMaxVisibleX)
   else
     Result:=
-      (R.Top >= FRealIndentLeft) and
-      (R.Bottom < Height-FRealIndentRight);
+      (R.Top >= FRealIndentTop) and
+      (R.Bottom <= FRealMaxVisibleY);
 end;
 
 procedure TATTabs.MakeVisible(AIndex: integer);
 var
   D: TATTabData;
   R: TRect;
-  NPos: integer;
+  NPos, NPosLow, NPosHigh, NMaxScrollPos: integer;
 begin
   //sometimes new tab has not updated Data.TabRect
   if FTabsChanged or FTabsResized then
@@ -4936,17 +5008,46 @@ begin
   if D=nil then exit;
   R:= D.TabRect;
 
-  if not FActualMultiline then
-    NPos:= R.Left - Width div 2
-  else
-    NPos:= R.Top - Height div 2;
+  NMaxScrollPos:= GetMaxScrollPos;
 
-  SetScrollPos(Min(GetMaxScrollPos, Max(0, NPos)));
+  if not FActualMultiline then
+  begin
+    NPosLow:= R.Left - FRealIndentLeft - FOptSpaceSide;
+    NPosHigh:= R.Right - FRealMaxVisibleX;
+    if FOptShowPlusTab and (AIndex = TabCount-1) then
+      Inc(NPosHigh, FRectTabPlus_NotScrolled.Width + FOptSpaceSide);
+
+    if ScrollPos > NPosLow then
+      NPos:= NPosLow
+    else
+    if ScrollPos < NPosHigh then
+      NPos:= NPosHigh
+    else
+      NPos:= R.Left - Width div 2;
+  end
+  else
+  begin
+    NPosLow:= R.Top - FRealIndentTop;
+    NPosHigh:= R.Bottom - FRealMaxVisibleY;
+    if FOptShowPlusTab and (AIndex = TabCount-1) then
+      Inc(NPosHigh, FRectTabPlus_NotScrolled.Height);
+
+    if ScrollPos > NPosLow then
+      NPos:= NPosLow
+    else
+    if ScrollPos < NPosHigh then
+      NPos:= NPosHigh
+    else
+      NPos:= R.Top - Height div 2;
+  end;
+
+  SetScrollPos(Min(NMaxScrollPos, Max(0, NPos)));
+  FMouseDownThenTabsScrolled:= FMouseDown;
 end;
 
 procedure TATTabs.SetScrollPos(AValue: integer);
 begin
-  //user suggested to not limit ScrollPos
+  ////user suggested to not limit ScrollPos, so this was commented:
   //AValue:= Max(0, Min(GetMaxScrollPos, AValue) );
   if FScrollPos=AValue then exit;
   FScrollPos:= AValue;
@@ -5128,6 +5229,7 @@ procedure TATTabs.UpdateTabTooltip;
 begin
   FTabIndexHintedPrev:= -1;
 end;
+
 
 initialization
   cRect0:= Rect(0, 0, 0, 0);
