@@ -688,6 +688,7 @@ type
     function GetRectOfButton(AButton: TATTabButton): TRect;
     function GetRectOfButtonIndex(AIndex: integer; AtLeft: boolean): TRect;
     function GetScrollPageSize: integer;
+    procedure IncrementTabIndexUntilVisible(var AIndex: integer; AIncrement: integer);
     function IsDraggingAllowed: boolean;
     procedure SetOptButtonLayout(const AValue: string);
     procedure SetOptScalePercents(AValue: integer);
@@ -2363,7 +2364,11 @@ begin
   begin
     Data:= GetTabData(i);
     if not Assigned(Data) then Continue;
-    if not Data.TabVisible then Continue;
+    if not Data.TabVisible then
+    begin
+      Data.TabRect:= cRect0;
+      Continue;
+    end;
     Data.TabStartsNewLine:= false;
 
     R.Left:= R.Right;
@@ -3127,6 +3132,7 @@ end;
 function TATTabs.GetTabAt(AX, AY: integer; out APressedX: boolean;
   AForDragDrop: boolean=false): integer;
 var
+  VisTabs: TStringList;
   Pnt: TPoint;
   RectTab, RectNext: TRect;
   Data, DataNext: TATTabData;
@@ -3222,70 +3228,80 @@ begin
   end;
 
   //normal tab?
-  L:= 0;
-  R:= NCount-1;
-  while (L<=R) do
+  VisTabs:= TStringList.Create;
+  VisTabs.Capacity:= NCount; //makes less mem reallocs
+  for L:= 0 to NCount-1 do
   begin
-    M:= (L+R+1) div 2;
-    Data:= GetTabData(M);
-    if Data=nil then Break;
+    Data:= GetTabData(L);
+    if Assigned(Data) and Data.TabVisible and (Data.TabRect<>cRect0) then
+      VisTabs.AddObject(IntToStr(L), Data);
+  end;
 
-    RectTab:= GetRectScrolled(Data.TabRect);
-    if RectTab=cRect0 then Break;
-
-    //support drag-drop into area between tabs
-    //we need to increase RectTab, because it doesn't contain inter-tab area
-    if FOptPosition in [atpTop, atpBottom] then
-      Dec(RectTab.Left, DoScale(FOptSpaceBetweenTabs))
-    else
-      Dec(RectTab.Top, DoScale(FOptSpaceBetweenTabs));
-
-    if PtInRect(RectTab, Pnt) then
+  try
+    L:= 0;
+    R:= VisTabs.Count-1;
+    while (L<=R) do
     begin
-      if Data.TabVisible then
+      M:= (L+R+1) div 2;
+      Data:= TATTabData(VisTabs.Objects[M]);
+      if Data=nil then Break;
+
+      RectTab:= GetRectScrolled(Data.TabRect);
+
+      //support drag-drop into area between tabs
+      //we need to increase RectTab, because it doesn't contain inter-tab area
+      if FOptPosition in [atpTop, atpBottom] then
+        Dec(RectTab.Left, DoScale(FOptSpaceBetweenTabs))
+      else
+        Dec(RectTab.Top, DoScale(FOptSpaceBetweenTabs));
+
+      if PtInRect(RectTab, Pnt) then
       begin
-        Result:= M;
+        Result:= StrToIntDef(VisTabs[M], -1);
         APressedX:= Data.TabVisibleX and PtInRect(GetRectScrolled(Data.TabRectX), Pnt);
         if AForDragDrop then
           //position is over right-half of tab?
           if PtInRect(Rect((RectTab.Left+RectTab.Right) div 2, RectTab.Top, RectTab.Right, RectTab.Bottom), Pnt) then
           begin
-            if (M+1=NCount) then
+            if (Result+1=NCount) then
             begin
               Result:= cTabIndexPlus;
               APressedX:= false;
             end
             else
-            if (M+1<NCount) then
+            if (Result+1<NCount) then
             begin
-              DataNext:= GetTabData(M+1);
+              DataNext:= GetTabData(Result+1);
               if Assigned(DataNext) and DataNext.TabVisible then
               begin
                 RectNext:= GetRectScrolled(DataNext.TabRect);
                 if (RectNext.Top=RectTab.Top) and (RectNext.Left>=RectTab.Right) then
                 begin
-                  Result:= M+1;
+                  Result:= Result+1;
                   APressedX:= false;
                 end;
               end;
             end;
           end;
+          Break;
       end;
-      Exit;
-    end;
 
-    if (AY>=RectTab.Bottom) then
-      L:= M+1
-    else
-    if (AY<RectTab.Top) then
-      R:= M-1
-    else
-    if (AX>=RectTab.Right) then
-      L:= M+1
-    else
-      R:= M-1;
+      if (AY>=RectTab.Bottom) then
+        L:= M+1
+      else
+      if (AY<RectTab.Top) then
+        R:= M-1
+      else
+      if (AX>=RectTab.Right) then
+        L:= M+1
+      else
+        R:= M-1;
+    end;
+  finally
+    FreeAndNil(VisTabs);
   end;
 end;
+
 
 procedure TATTabs.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: integer);
 var
@@ -3716,41 +3732,76 @@ begin
     FOnTabMove(Self, -1, AIndex);
 end;
 
+procedure TATTabs.IncrementTabIndexUntilVisible(var AIndex: integer; AIncrement: integer);
+var
+  Data: TATTabData;
+begin
+  repeat
+    Inc(AIndex, AIncrement);
+    if not IsIndexOk(AIndex) then Break;
+    Data:= GetTabData(AIndex);
+    if Data=nil then Break;
+    if Data.TabVisible then Break;
+  until false;
+end;
+
 function TATTabs.DeleteTab(AIndex: integer;
   AAllowEvent, AWithCancelBtn: boolean;
   AAction: TATTabActionOnClose=aocDefault;
   AReason: TATTabDeletionReason=adrNone): boolean;
   //
   procedure _ActivateRightTab;
+  var
+    NIndex: integer = -1;
+    bDisableEvent: boolean = false;
   begin
     if FTabIndex>AIndex then
-      SetTabIndexEx(FTabIndex-1, true)
+    begin
+      NIndex:= FTabIndex;
+      IncrementTabIndexUntilVisible(NIndex, -1);
+      bDisableEvent:= true;
+    end
     else
     if (FTabIndex=AIndex) and (FTabIndex>0) and (FTabIndex>=TabCount) then
-      SetTabIndex(FTabIndex-1)
+    begin
+      NIndex:= FTabIndex;
+      IncrementTabIndexUntilVisible(NIndex, -1);
+    end
     else
     if FTabIndex=AIndex then
-      SetTabIndex(FTabIndex);
+    begin
+      NIndex:= FTabIndex-1;
+      IncrementTabIndexUntilVisible(NIndex, 1);
+    end
+    else
+      Exit;
+    if IsIndexOk(NIndex) then
+      SetTabIndexEx(NIndex, bDisableEvent);
   end;
   //
   procedure _ActivateRecentTab;
   var
-    Idx, i: integer;
+    NIndex, i: integer;
     Tick, TickMax: Int64;
   begin
     TickMax:= 0;
-    Idx:= -1;
+    NIndex:= -1;
     for i:= 0 to TabCount-1 do
     begin
       Tick:= GetTabTick(i);
       if Tick>TickMax then
       begin
         TickMax:= Tick;
-        Idx:= i;
+        NIndex:= i;
       end;
     end;
-    if Idx>=0 then
-      SetTabIndex(Idx)
+    if NIndex>=0 then
+    begin
+      Dec(NIndex);
+      IncrementTabIndexUntilVisible(NIndex, 1);
+      if IsIndexOk(NIndex) then
+        SetTabIndex(NIndex);
+    end
     else
       _ActivateRightTab;
   end;
@@ -3887,10 +3938,16 @@ begin
     // tab or - if there are none - to the first
     if AIndex=TabIndex then
     begin
-      if IsIndexOk(AIndex+1) then
-        SetTabIndex(AIndex+1)
+      IncrementTabIndexUntilVisible(AIndex, 1);
+      if IsIndexOk(AIndex) then
+        SetTabIndex(AIndex)
       else
-        SetTabIndex(0);
+      begin
+        AIndex:= -1;
+        IncrementTabIndexUntilVisible(AIndex, 1);
+        if IsIndexOk(AIndex) then
+          SetTabIndex(AIndex);
+      end;
     end;
   end;
 end;
@@ -4138,7 +4195,10 @@ end;
 function TATTabs.GetTabVisibleX(AIndex: integer; const D: TATTabData): boolean;
 begin
   if Width<FOptMinimalWidthForSides then
-    exit(false);
+  begin
+    Result:= false;
+    exit;
+  end;
 
   case FOptShowXButtons of
     atbxShowNone:
