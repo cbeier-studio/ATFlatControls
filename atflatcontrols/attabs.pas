@@ -781,7 +781,7 @@ type
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     procedure CMMouseLeave(var Msg: TMessage); message CM_MOUSELEAVE;
     {$ifdef windows}
-    procedure WMEraseBkgnd(var Message: TMessage); message WM_ERASEBKGND;
+    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     {$endif}
     procedure DragOver(Source: TObject; X, Y: integer; State: TDragState; var Accept: Boolean); override;
     procedure Loaded; override;
@@ -986,7 +986,9 @@ uses
 const
   cSmoothScale = 5;
 var
-  cRect0: TRect;
+  cRect0: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
+var
+  ATTabsEraseBkgnd: boolean = true;
 
 procedure AddTabButton(var Buttons: TATTabButtons; Id: TATTabButton; Size: integer);
 begin
@@ -1558,6 +1560,8 @@ begin
   Canvas.Font.Color:= clRed;
   Canvas.TextOut(0, 0, IntToStr(FPaintCount));;
   {$endif}
+
+  ATTabsEraseBkgnd:= false;
 end;
 
 procedure _PaintMaybeCircle(C: TCanvas; X1, Y1, X2, Y2: integer);
@@ -3971,9 +3975,22 @@ begin
 end;
 
 {$ifdef windows}
-//needed to remove flickering on resize and mouse-over
-procedure TATTabs.WMEraseBkgnd(var Message: TMessage);
+procedure TATTabs.WMEraseBkgnd(var Message: TWMEraseBkgnd);
+var
+  R: TRect;
 begin
+  //to avoid flickering with white on app startup
+  if ATTabsEraseBkgnd and (Message.DC<>0) then
+  begin
+    Brush.Color:= ColorBg;
+    R.Left:= 0;
+    R.Top:= 0;
+    R.Width:= Width;
+    R.Height:= Height;
+    Windows.FillRect(Message.DC, R, Brush.Reference.Handle);
+  end;
+
+  //to remove flickering on resize and mouse-over
   Message.Result:= 1;
 end;
 {$endif}
@@ -5313,7 +5330,6 @@ end;
 
 
 initialization
-  cRect0:= Rect(0, 0, 0, 0);
 
   {$if defined(LCLQt5) or defined(LCLQt6) or defined(darwin)}
   ATTabsStretchDrawEnabled:= false;
