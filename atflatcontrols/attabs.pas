@@ -619,7 +619,6 @@ type
     FPic_Arrow_D_a: TATTabsPicture;
 
     FOnTabClick: TNotifyEvent;
-    FOnTabChanged: TNotifyEvent;
     FOnTabPlusClick: TNotifyEvent;
     FOnTabClickUserButton: TATTabClickUserButton;
     FOnTabClose: TATTabCloseEvent;
@@ -952,7 +951,6 @@ type
 
     //events
     property OnTabClick: TNotifyEvent read FOnTabClick write FOnTabClick;
-    property OnTabChanged: TNotifyEvent read FOnTabChanged write FOnTabChanged;           // aducom
     property OnTabPlusClick: TNotifyEvent read FOnTabPlusClick write FOnTabPlusClick;
     property OnTabClickUserButton: TATTabClickUserButton read FOnTabClickUserButton write FOnTabClickUserButton;
     property OnTabClose: TATTabCloseEvent read FOnTabClose write FOnTabClose;
@@ -3890,13 +3888,13 @@ procedure TATTabs.SetTabIndexEx(AIndex: integer; ADisableEvent: boolean);
 //note: check "if AIndex=FTabIndex" must not be here, must be in outer funcs.
 //Sometimes SetTabIndex(TabIndex) is used in CudaText: do focus of clicked tab, and in DeleteTab.
 var
-  bCanChange, bDisableEvent, bTabChanged: boolean;
+  bCanChange, bDisableEvent{, bTabChanged}: boolean;
   PrevMousePos, NextMousePos: TPoint;
 begin
   if csLoading in ComponentState then
     FTabIndexLoaded:= AIndex;
   bDisableEvent:= (csLoading in ComponentState) or ADisableEvent;
-  bTabChanged:= AIndex<>FTabIndex;
+  //bTabChanged:= AIndex<>FTabIndex;
 
   if IsIndexOk(AIndex) then
   begin
@@ -3925,9 +3923,6 @@ begin
     begin
       if Assigned(FOnTabClick) then
         FOnTabClick(Self);
-
-      if Assigned(FOnTabChanged) and bTabChanged then
-        FOnTabChanged(Self);
     end;
   end;
 end;
