@@ -104,6 +104,7 @@ begin
   Width:= 200;
   Height:= 20;
   Caption:= '';
+  Color:= clBtnFace;
   FImages:= nil;
   FVertical:= false;
   FButtonWidth:= 50;
@@ -514,7 +515,10 @@ begin
   //to avoid flickering with white on app startup
   if Message.DC<>0 then
   begin
-    Brush.Color:= Color;
+    if ParentColor and Assigned(Parent) then
+      Brush.Color:= Parent.Brush.Color
+    else
+      Brush.Color:= Color;
     R.Left:= 0;
     R.Top:= 0;
     R.Width:= Width;
