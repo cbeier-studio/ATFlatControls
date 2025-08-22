@@ -91,7 +91,8 @@ type
     FItems: TStringList;
     FItemsShort: TStringList;
     FItemIndex: integer;
-    FPopup: TPopupMenu;
+    FPopupDropdown: TPopupMenu;
+    FPopupChoices: TPopupMenu;
     FPadding: integer;
     FPaddingBig: integer;
     FTheme: PATFlatTheme;
@@ -159,6 +160,7 @@ type
     function CanFocus: boolean; override;
     function IsPressed: boolean;
     property IsMouseOver: boolean read FOver;
+    property PopupDropdown: TPopupMenu read FPopupDropdown write FPopupDropdown;
     property DataString: string read FDataString write FDataString;
     property DataString2: string read FDataString2 write FDataString2;
     property DataString3: string read FDataString3 write FDataString3;
@@ -335,11 +337,20 @@ begin
 end;
 
 procedure TATButton.Click;
+var
+  P: TPoint;
 begin
   if FKind=abuTextChoice then
   begin
     ShowChoiceMenu;
     exit
+  end;
+
+  if Assigned(FPopupDropdown) then
+  begin
+    P:= ClientToScreen(Point(0, Height));
+    FPopupDropdown.Popup(P.X, P.Y);
+    exit;
   end;
 
   inherited;
@@ -974,10 +985,10 @@ var
   i: integer;
   P: TPoint;
 begin
-  if not Assigned(FPopup) then
-    FPopup:= TPopupMenu.Create(Self);
+  if not Assigned(FPopupChoices) then
+    FPopupChoices:= TPopupMenu.Create(Self);
 
-  FPopup.Items.Clear;
+  FPopupChoices.Items.Clear;
   for i:= 0 to FItems.Count-1 do
   begin
     mi:= TMenuItem.Create(Self);
@@ -988,11 +999,11 @@ begin
 
     mi.OnClick:= DoChoiceClick;
 
-    FPopup.Items.Add(mi);
+    FPopupChoices.Items.Add(mi);
   end;
 
   P:= ClientToScreen(Point(0, Height));
-  FPopup.PopUp(P.X, P.Y);
+  FPopupChoices.PopUp(P.X, P.Y);
 end;
 
 function TATButton.GetTextItem(AIndex: integer; const ADefault: string): string;
