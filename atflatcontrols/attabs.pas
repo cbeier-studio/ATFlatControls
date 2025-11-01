@@ -34,6 +34,7 @@ uses
   System.UITypes,
   {$endif}
   ATCanvasPrimitives,
+  ATFlatThemes,
   ATTabs_Picture,
   ATFlatControls_Separator,
   Menus;
@@ -4166,6 +4167,10 @@ begin
       FTabMenu.Items.Add(mi);
     end;
   end;
+
+  if Assigned(GlobalApplyPopupTheme) then
+    GlobalApplyPopupTheme(FTabMenu);
+
   P:= Point(FRectArrowDown.Left, FRectArrowDown.Bottom);
   P:= ClientToScreen(P);
   FTabMenu.Popup(P.X, P.Y);

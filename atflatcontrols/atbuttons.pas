@@ -348,6 +348,9 @@ begin
 
   if Assigned(FPopupDropdown) then
   begin
+    if Assigned(GlobalApplyPopupTheme) then
+      GlobalApplyPopupTheme(FPopupDropdown);
+
     P:= ClientToScreen(Point(0, Height));
     FPopupDropdown.Popup(P.X, P.Y);
     exit;
@@ -1001,6 +1004,9 @@ begin
 
     FPopupChoices.Items.Add(mi);
   end;
+
+  if Assigned(GlobalApplyPopupTheme) then
+    GlobalApplyPopupTheme(FPopupChoices);
 
   P:= ClientToScreen(Point(0, Height));
   FPopupChoices.PopUp(P.X, P.Y);
