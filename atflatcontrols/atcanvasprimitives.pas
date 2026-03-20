@@ -6,11 +6,6 @@ unit ATCanvasPrimitives;
 
 {$ifdef fpc}
   {$mode objfpc}{$H+}
-  {$ifdef LCLGtk3}
-    {$define invert_pixels}
-  {$endif}
-{$else}
-  {$define invert_pixels}
 {$endif}
 
 interface
@@ -116,6 +111,9 @@ function CanvasCollapseStringByDots(C: TCanvas;
 function ColorBlend(c1, c2: Longint; A: Longint): Longint;
 function ColorBlendHalf(c1, c2: Longint): Longint;
 
+var
+  ATCanvasPrimitives_InvertByPixels: boolean = False;
+
 implementation
 
 function CanvasFontSizeToPixels(AValue: integer): integer;
@@ -209,16 +207,16 @@ begin
   C.FillRect(R2);
 end;
 
-{$ifdef invert_pixels}
-procedure CanvasInvertRect(C: TCanvas; const R: TRect; AColor: TColor);
+procedure CanvasInvertRect_ByPixels(C: TCanvas; const R: TRect; AColor: TColor);
 var
+  NValue: Longint;
   i, j: integer;
 begin
+  NValue:= not AColor and $ffffff;
   for j:= R.Top to R.Bottom-1 do
     for i:= R.Left to R.Right-1 do
-      C.Pixels[i, j]:= C.Pixels[i, j] xor (not AColor and $ffffff);
+      C.Pixels[i, j]:= C.Pixels[i, j] xor NValue;
 end;
-{$else}
 
 procedure CanvasInvertRect(C: TCanvas; const R: TRect; AColor: TColor);
 var
@@ -231,6 +229,12 @@ var
   OldEndCap: TPenEndCap;
   {$endif}
 begin
+  if ATCanvasPrimitives_InvertByPixels then
+  begin
+    CanvasInvertRect_ByPixels(C, R, AColor);
+    exit;
+  end;
+
   OldAntialias:= C.AntialiasingMode;
   OldMode:= C.Pen.Mode;
   OldStyle:= C.Pen.Style;
@@ -261,7 +265,6 @@ begin
   C.AntialiasingMode:= OldAntialias;
   C.Rectangle(0, 0, 0, 0); //apply pen
 end;
-{$endif}
 
 procedure CanvasInvertRectEmptyInside(C: TCanvas; const R: TRect; AColor: TColor);
 var
@@ -273,6 +276,15 @@ var
   OldPenWidth: integer;
   OldBrushStyle: TBrushStyle;
 begin
+  if ATCanvasPrimitives_InvertByPixels then
+  begin
+    CanvasInvertRect_ByPixels(C, Rect(R.Left, R.Top, R.Right, R.Top+1), AColor);
+    CanvasInvertRect_ByPixels(C, Rect(R.Left, R.Top+1, R.Left+1, R.Bottom-1), AColor);
+    CanvasInvertRect_ByPixels(C, Rect(R.Right-1, R.Top+1, R.Right, R.Bottom-1), AColor);
+    CanvasInvertRect_ByPixels(C, Rect(R.Left, R.Bottom-1, R.Right, R.Bottom), AColor);
+    exit;
+  end;
+
   {$ifdef FPC}
   OldAntialias:= C.AntialiasingMode;
   {$endif}
@@ -822,6 +834,12 @@ begin
   end;
 end;
 
+
+initialization
+
+  {$ifndef FPC}
+  ATCanvasPrimitives_InvertByPixels:= True;
+  {$endif}
 
 end.
 
